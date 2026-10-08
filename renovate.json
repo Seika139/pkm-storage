@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["mise", "pep621"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["before 10am on Monday"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 10am on Monday"]
+  }
+}

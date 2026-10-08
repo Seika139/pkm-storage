@@ -1,0 +1,55 @@
+---
+name: CI
+
+"on":
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  markdown:
+    uses: Seika139/.github/.github/workflows/lint-markdown.yml@main
+    secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: read
+  yaml:
+    uses: Seika139/.github/.github/workflows/lint-yaml.yml@main
+  dependency-lock:
+    name: Dependency lock
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+          version: "0.12.23"
+      - name: Validate JSON files
+        run: |
+          uv run --no-project --python 3.12 python - <<'PY'
+          import json
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["git", "ls-files", "-z", "--", "*.json"],
+              check=True,
+              capture_output=True,
+          )
+          for raw_path in result.stdout.split(b"\0"):
+              if raw_path:
+                  path = Path(raw_path.decode())
+                  with path.open(encoding="utf-8") as file:
+                      json.load(file)
+          PY
+      - name: Check uv lockfile
+        run: uv lock --check --project .pkm
+      - name: Run Storage setup
+        run: uv run --python 3.12 --no-project .pkm/setup_bootstrap.py .
