@@ -1,5 +1,15 @@
 # PKM Storage
 
+<div align="center">
+  <a href="https://github.com/Seika139/pkm-storage/releases/tag/v0.1.0">
+    <img alt="version" src="https://img.shields.io/badge/version-v0.1.0-white.svg">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/Seika139/pkm-storage/actions/workflows/ci.yml">
+    <img alt="CI" src="https://github.com/Seika139/pkm-storage/actions/workflows/ci.yml/badge.svg?branch=main">
+  </a>
+</div>
+
 Web Clipper で見つけたページを Markdown として保存し、Obsidian と検索ツールから読み返すための個人用ナレッジストレージです。保存した Markdown が正本で、検索用の SQLite 索引は必要に応じて作り直せます。
 
 ## まず使う
@@ -14,19 +24,14 @@ Web Clipper で見つけたページを Markdown として保存し、Obsidian �
 
 `mise install` はこの repo が固定する uv と `git-secrets` をインストールします。
 
-### 1. 2つのリポジトリを並べて配置する
+### 1. Storage リポジトリを clone する
 
-Storage は Framework の Python パッケージをローカル依存として使います。両方を同じ親ディレクトリの直下に clone してください。
+Storage は GitHub 上の Framework のリリース tag を依存先として使うため、Framework repo を隣に clone する必要はありません。
 
-```text
-programs/pkm/
-├── pkm-framework/    Framework repo
-└── pkm-storage/      この repo
+```bash
+git clone https://github.com/Seika139/pkm-storage.git
+cd pkm-storage
 ```
-
-`.pkm/pyproject.toml` は `../../pkm-framework` を参照します。`pkm-storage` の中に Framework を clone したり、別の場所へ配置したりすると依存関係を解決できません。現在この2つの repo に remote URL は設定されていないため、clone 時は利用可能な実際の URL を使ってください。
-
-隣に Framework checkout が必要なのは、この PoC が local path dependency を使っている間だけです。Framework を公開して Storage の dependency を tag などに固定した後は、テンプレートから作った Storage repo だけを clone すれば動かせる構成へ移行します。
 
 ### 2. Framework の実行環境と共通ファイルを準備する
 
@@ -44,16 +49,23 @@ Storage に固有の mise task や script を追加する場合は、Framework �
 
 `pkm-storage-vault/AGENTS.md` は Storage 固有の安定した規約ファイルで、共通規約は Framework から `AGENTS.framework.md` に配置します。共通規約は Git 管理外で再生成可能です。AI / MCP の `wiki_context` は両ファイルの本文とパスを返し、共通規約が欠けている場合は Wiki 書き込みを拒否して setup による修復を案内します。
 
-この PoC では `.pkm/pyproject.toml` が同じ親ディレクトリにある `../../pkm-framework` を editable local path dependency として参照します。Framework のコードだけを変更し依存定義を変えていない場合は、Framework checkout の変更を確定してから `mise run setup` を再実行すれば反映できます。
+`.pkm/pyproject.toml` は `pkm-framework` を GitHub の明示した tag に固定し、`.pkm/uv.lock` はその tag が指す commit と依存バージョンを記録します。Framework の新しい tag を Storage に取り込む場合は、Storage root で次の手順を実行してください。
 
-Framework の `pyproject.toml` で依存関係を追加・変更した場合（たとえば MCP 用依存を追加した場合）は、Storage root で lockfile を再生成してから setup してください。`uv.lock` は Storage repo の追跡対象なので、変更差分を確認して Storage と一緒に管理します。
+1. `.pkm/pyproject.toml` の `pkm-framework` source にある `tag` を新しい Framework tag に更新します。
+2. lockfile を再生成し、固定 tag に対応する解決済み commit を記録します。
+3. setup を実行して、更新した lockfile から環境と Framework 管理ファイルを同期します。
+4. `.pkm/pyproject.toml` と `.pkm/uv.lock` の差分を確認して一緒に commit します。
 
 ```bash
+# .pkm/pyproject.toml の tag を新しいリリースに変更してから実行
 mise exec -- uv lock --project .pkm
 mise run setup
+git diff -- .pkm/pyproject.toml .pkm/uv.lock
+git add .pkm/pyproject.toml .pkm/uv.lock
+git commit -m "chore: update pkm-framework"
 ```
 
-Framework を公開した後は、依存を Git tag などの明示した版へ切り替え、Storage の `uv.lock` を更新してから setup を実行する運用に移行します。依存先の最新版を毎回自動で追う方式にはしません。中断された managed-resource 更新は journal の expected hash/mode と現在の状態が一致する場合だけ自動 rollback します。人手の編集を検知すると既存ファイルと journal を保護して停止するため、内容を確認してから手動で解消してください。
+依存 tag を自動で最新版へ追従させず、利用するリリースを明示的に選びます。中断された managed-resource 更新は journal の expected hash/mode と現在の状態が一致する場合だけ自動 rollback します。人手の編集を検知すると既存ファイルと journal を保護して停止するため、内容を確認してから手動で解消してください。
 
 ### 3. Obsidian で vault を開く
 
