@@ -1,0 +1,9 @@
+[tools]
+"aqua:awslabs/git-secrets" = "1.3.0"
+uv = "0.12.23"
+
+[tasks.grant-permissions]
+description = "mise task scripts に実行権限を付与する"
+quiet = true
+shell = "bash -c"
+run = 'find ./mise/tasks/ -type f -name "*.sh" -exec chmod +x {} +'

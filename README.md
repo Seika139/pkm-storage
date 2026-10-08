@@ -1,0 +1,176 @@
+# PKM Storage
+
+Web Clipper で見つけたページを Markdown として保存し、Obsidian と検索ツールから読み返すための個人用ナレッジストレージです。保存した Markdown が正本で、検索用の SQLite 索引は必要に応じて作り直せます。
+
+## まず使う
+
+### 必要なもの
+
+- [Git](https://git-scm.com/) と [mise](https://mise.jdx.dev/)。
+- [Obsidian](https://obsidian.md/download)。
+- 利用するブラウザ用の [Obsidian Web Clipper](https://obsidian.md/help/web-clipper)。
+
+`mise.toml` は uv `0.12.23` と `git-secrets` を固定します。`mise install` で両方を導入してください。初回 bootstrap は `uv run --python 3.12 --no-project` で起動するため、システムに Python を別途インストールする必要はありません。uv は必要な Python 3.12 を管理環境へ自動で導入します（[uv の Python 管理](https://docs.astral.sh/uv/guides/install-python/)）。
+
+`mise install` はこの repo が固定する uv と `git-secrets` をインストールします。
+
+### 1. 2つのリポジトリを並べて配置する
+
+Storage は Framework の Python パッケージをローカル依存として使います。両方を同じ親ディレクトリの直下に clone してください。
+
+```text
+programs/pkm/
+├── pkm-framework/    Framework repo
+└── pkm-storage/      この repo
+```
+
+`.pkm/pyproject.toml` は `../../pkm-framework` を参照します。`pkm-storage` の中に Framework を clone したり、別の場所へ配置したりすると依存関係を解決できません。現在この2つの repo に remote URL は設定されていないため、clone 時は利用可能な実際の URL を使ってください。
+
+隣に Framework checkout が必要なのは、この PoC が local path dependency を使っている間だけです。Framework を公開して Storage の dependency を tag などに固定した後は、テンプレートから作った Storage repo だけを clone すれば動かせる構成へ移行します。
+
+### 2. Framework の実行環境と共通ファイルを準備する
+
+`pkm-storage` のルートで実行します。最初は Storage に追跡されている `setup.sh` が Framework の導入を担当します。mise の task script に実行権限を付けてから setup を実行してください。
+
+```bash
+mise install                    # uv 0.12.23 と git-secrets をインストール
+mise run grant-permissions      # mise task script に実行権限を付与
+mise run setup                  # uv で固定依存を解決し、共通ファイルと Skills を配置
+```
+
+`mise run setup` は `.pkm/uv.lock` に固定された Framework で `uv sync --locked` を実行し、Framework の `mise/tasks/`、`mise/scripts/`、共通 Vault 規約、Skills を配置します。`.pkm/runtime/`、`.agents/skills/`、配布 manifest と共通規約は生成物として Git 管理しません。初回 clone と修復に使う `mise/tasks/setup.sh` と `.pkm/setup_bootstrap.py` は Storage に残る安定 bootstrap です。setup 中は `.pkm/setup-incomplete` が存在し、失敗時も marker が残ります。setup が終わるまで Framework task と Wiki 書き込みは停止します。
+
+Storage に固有の mise task や script を追加する場合は、Framework が予約していない名前を使ってください。`.gitignore` の `PKM Framework managed files` block は配布 manifest から生成され、周囲のユーザー設定を残したまま、将来追加される managed path も無視対象へ反映します。block 内を編集した場合は setup が停止します。`mise.toml` の `grant-permissions` など Storage 固有の設定、`mise/tasks/setup.sh`、`.pkm/setup_bootstrap.py`、独自ファイルは Framework の setup で置換・削除されません。Managed task/script の更新はファイル hash を照合し、手編集を検知した場合は停止します。
+
+`pkm-storage-vault/AGENTS.md` は Storage 固有の安定した規約ファイルで、共通規約は Framework から `AGENTS.framework.md` に配置します。共通規約は Git 管理外で再生成可能です。AI / MCP の `wiki_context` は両ファイルの本文とパスを返し、共通規約が欠けている場合は Wiki 書き込みを拒否して setup による修復を案内します。
+
+この PoC では `.pkm/pyproject.toml` が同じ親ディレクトリにある `../../pkm-framework` を editable local path dependency として参照します。Framework のコードだけを変更し依存定義を変えていない場合は、Framework checkout の変更を確定してから `mise run setup` を再実行すれば反映できます。
+
+Framework の `pyproject.toml` で依存関係を追加・変更した場合（たとえば MCP 用依存を追加した場合）は、Storage root で lockfile を再生成してから setup してください。`uv.lock` は Storage repo の追跡対象なので、変更差分を確認して Storage と一緒に管理します。
+
+```bash
+mise exec -- uv lock --project .pkm
+mise run setup
+```
+
+Framework を公開した後は、依存を Git tag などの明示した版へ切り替え、Storage の `uv.lock` を更新してから setup を実行する運用に移行します。依存先の最新版を毎回自動で追う方式にはしません。中断された managed-resource 更新は journal の expected hash/mode と現在の状態が一致する場合だけ自動 rollback します。人手の編集を検知すると既存ファイルと journal を保護して停止するため、内容を確認してから手動で解消してください。
+
+### 3. Obsidian で vault を開く
+
+Obsidian の「保管庫としてフォルダを開く（Open folder as vault）」を選び、この repo の `pkm-storage-vault/` を指定してください。既存の vault を開く操作なので、新しい空の vault を作る必要はありません。Obsidian の vault 名はフォルダ名と同じため、表示名も `pkm-storage-vault` になります。現在このディレクトリが `vault/` という名前の場合は、そのフォルダを開いてから Obsidian の [Manage vaults](https://obsidian.md/help/manage-vaults) で名前を `pkm-storage-vault` に変更してください。Obsidian がフォルダ名も変更します。Framework はフォルダ名ではなく `.pkm-storage` マーカーから vault を見つけるため、この名前を使えます。
+
+```text
+pkm-storage/pkm-storage-vault/
+├── .obsidian/   Obsidian の設定
+├── assets/      添付ファイル置き場
+├── raw/clips/   Web Clipper で保存したページ
+└── wiki/        整理した知識
+```
+
+`.obsidian/` のうち Git で共有するのは許可リストにある設定だけです。その他の画面状態や端末固有設定は Git 管理されません。
+
+### 4. Web Clipper をインストールして保存先を設定する
+
+ブラウザの公式ストアから拡張機能をインストールします。
+
+- [Chrome Web Store](https://chromewebstore.google.com/detail/obsidian-web-clipper/cnjifjpddelmedmihgijeibhnjfabmlf)（Chrome、Brave、Arc、Orion、その他 Chromium 系ブラウザ）。
+- [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/web-clipper-obsidian/)。
+- [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/obsidian-web-clipper/eigdjhmgnaaeaonimdklocfekkaanfme)。
+- [Safari Extensions（App Store）](https://apps.apple.com/us/app/obsidian-web-clipper/id6720708363)。
+
+Web Clipper の設定と保存画面で次の操作を行います。
+
+1. Web Clipper の **Settings** にある **Vault** 欄へ `pkm-storage-vault` と入力し、Enter を押して登録します。ここには `pkm-storage/pkm-storage-vault/` のようなフォルダパスではなく、Obsidian に表示される vault 名を入力してください。
+2. **Settings → Templates** で [templates/web-clipper.json](templates/web-clipper.json) を Import します。画面への JSON ファイルのドラッグ＆ドロップでも取り込めます。
+3. ページを clip するときは、ポップアップ下部の **Vault** dropdown で `pkm-storage-vault` を選び、**Folder** field に `raw/clips` を指定します。テンプレートにも保存先が設定されていますが、保存画面で保存先を確認・変更できます。詳しくは [Web Clipper の保存画面](https://obsidian.md/help/web-clipper/capture)を参照してください。
+
+Web Clipper に以前 `vault` を登録していた場合は、Settings でその登録を削除し、`pkm-storage-vault` を追加してください。Web Clipper の vault 名は Obsidian に表示される名前と完全に一致する必要があります。
+
+テンプレート `PKM Storage` は `raw/clips/` に新規 Markdown を作ります。パスは vault からの相対パスなので、`pkm-storage-vault/raw/clips/` ではなく `raw/clips/` です。本文にはページタイトルと抽出された内容、プロパティには URL と保存日時を記録します。
+
+### 5. ページを保存して検索する
+
+Web Clipper で `PKM Storage` テンプレートを選び、ページを1つ保存してください。`pkm-storage-vault/raw/clips/` に Markdown ファイルができたら、初回の全索引を作成して検索します。
+
+```bash
+mise run index
+mise run search -- "検索したい語"
+```
+
+`index` は全 Markdown の索引を再構築します。以降の `search` は Markdown の追加・変更・削除を差分反映してから検索するため、保存のたびに `index` を実行する必要はありません。ファイルを読む場合は次のように vault 相対パスを指定します。
+
+```bash
+mise run read -- raw/clips/保存したファイル名.md
+```
+
+## タスク
+
+- `mise run setup` は固定された Framework の依存関係、管理対象 task/script、共通 Vault 規約、Skills を準備または更新します。失敗時は setup incomplete marker が残り、修復が完了するまで Framework managed task は実行できません。setup を再実行してください。
+- `mise run skills-install` は Skills だけを再配置します。Framework 管理ファイルも含む更新には `mise run setup` を使います。
+- `mise run index` は FTS 索引を全再構築します。
+- `mise run search -- <検索語>` は索引を差分更新して検索します。
+- `mise run read -- <vault相対パス>` は Markdown を読みます。
+- `mise run mcp` は `search`、`read`、Vault 規約の取得、ガード付き Wiki 変更を提供する MCP server を stdio で起動します。AI クライアントごとの MCP 登録は各クライアントで別途設定してください。
+- `mise run sync` は許可された Vault の変更を commit し、設定済み remote と同期します。
+- `mise run schedule-install`, `mise run schedule-status`, `mise run schedule-uninstall` は、このユーザーの定時同期を登録・確認・解除します。
+
+### 定時 Git 同期
+
+定時同期は、おおむね1時間ごとに `mise run sync` を実行します。OS のユーザー単位スケジューラーを使い、常駐プロセスは追加しません。
+
+有効化する前に、この Storage の現在のブランチへ remote と upstream を設定してください。remote または upstream がない場合、同期は変更を commit する前に停止します。スケジュールを登録しても、remote を設定するまでは Git 同期されません。
+
+```bash
+# 現在の branch / remote / upstream を確認
+git status -sb
+git remote -v
+
+# 同期先を設定する例。実際の URL と branch 名を使う
+git remote add origin <private-storage-repository-url>
+git push --set-upstream origin main
+
+# まず手動で同期を実行し、結果を確認してからスケジュール登録
+mise run sync
+mise run schedule-install
+mise run schedule-status
+```
+
+`mise run schedule-install` は OS に応じて macOS LaunchAgent、Windows Task Scheduler、または Linux の systemd user timer を現在のユーザー用に登録します。登録した同期の解除には `mise run schedule-uninstall` を使います。登録時の `PATH` を各 scheduler に保存するため、mise・uv・Git のインストール先を変えた場合は `mise run schedule-install` を再実行してください。macOS LaunchAgent と Windows Task Scheduler はログオン中のユーザーセッションで動作します。Ubuntu では `systemctl --user` が使えるユーザーセッションが必要です。ログアウト後も user timer を実行するには systemd の lingering 設定が必要ですが、このコマンドは lingering を有効化しません。必要性を確認したうえで、OS の手順に沿って別途設定してください。
+
+自動 commit の対象は `pkm-storage-vault/raw/clips/`、`pkm-storage-vault/assets/`、`pkm-storage-vault/wiki/` です。`.obsidian/`、Storage repo の root、`.pkm/`、`.agents/`、その他の path は対象外です。commit 対象外の変更、既存の staged changes、merge など進行中の Git 操作がある場合は同期を停止し、手動確認を求めます。同期は Git hooks を通常どおり実行し、hook が失敗した場合も停止します。commit 前に停止した場合は index と working tree を確認してから再実行してください。
+
+同期順序は allowlist 内の変更の commit、remote の fetch、upstream の merge、push です。各 Git コマンドは最大5分で停止します。履歴が分岐しても競合がなければ Git の merge commit を作れます。競合時は自動解決せず、競合状態を残して停止します。reset、autostash、force push は行わず、merge で ignored file を上書きしない設定を使います。そのため ignored file が merge を妨げる場合も同期は停止し、手動確認が必要です。push は自動作成 commit だけでなく、現在の branch にある未 push の commit をすべて upstream へ送ります。
+
+Framework の WikiWriter と同期処理は `.pkm/cache/wiki-writer.sqlite` の同じプロセス間ロックを使います。Wiki 更新中に同期時刻になった場合はその回を skip し、次の時刻に再試行します。Web Clipper や Obsidian はこのロックを使わないため、同期開始前に Git の状態を確認し、競合した変更を自動解決しません。
+
+同期ログは `.pkm/cache/logs/sync.log` に保存され、最大1 MiBのファイルを3世代まで保持します。Linux の systemd user timer の実行状況は `mise run schedule-status`、macOS の LaunchAgent と Windows のタスク状態も同じ task で確認できます。
+
+### Codex から MCP を使う
+
+セットアップ済みの `pkm-storage` を Codex に登録します。`mise/tasks/mcp.sh` は自身の場所から Storage root を解決するため、`cwd` の指定は不要です。
+
+```bash
+codex mcp add pkm-storage -- /absolute/path/to/pkm-storage/mise/tasks/mcp.sh
+codex mcp list
+```
+
+1行目の `/absolute/path/to/pkm-storage` は、この端末に clone した実際の絶対パスに置き換えてください。別の clone や端末では、その場所の絶対パスを使って登録し直します。Codex CLI と IDE extension は MCP 設定を共有します。詳しくは [Codex の MCP 設定](https://developers.openai.com/learn/docs-mcp)を参照してください。
+
+AI / MCP による Wiki 変更は working tree に残り、AI / MCP 自身は commit / push しません。定時同期を有効にした場合は、Wiki・索引・ログを含む allowlist 内の変更が次の同期時に自動で commit / push されます。定時同期を使わない場合は、`git diff` で Wiki・索引・ログを確認してから手動で commit してください。
+
+検索索引と Python 環境は `.pkm/cache/` と `.pkm/runtime/` に置かれ、Git 管理外です。Markdown が残っていれば `mise run index` でいつでも再生成できます。
+
+## 保存時の注意
+
+- Web Clipper は選択中のテキストやハイライトがあると、その部分だけを保存することがあります。ページ全体を保存したい場合は選択やハイライトを解除してください。
+- ページ抽出結果はサイトにより異なり、動画本体やログイン後の全内容が保存されるとは限りません。
+- 画像は通常、元サイトへの URL として Markdown に残り、Vault へは自動ダウンロードされません。詳細は[Web Clipper の公式ガイド](https://obsidian.md/help/web-clipper/capture)を参照してください。
+- 保存物には Web ページの本文が含まれます。Storage repo の公開範囲と共有先を確認してください。
+
+## 関連ドキュメント
+
+- [Obsidian のインストール](https://obsidian.md/help/install)
+- [Web Clipper のインストールと使い方](https://obsidian.md/help/web-clipper)
+- [Web Clipper のテンプレート](https://obsidian.md/help/web-clipper/templates)
+- [Web Clipper のトラブルシューティング](https://obsidian.md/help/web-clipper/troubleshoot)
+- [Obsidian の vault 管理](https://obsidian.md/help/manage-vaults)

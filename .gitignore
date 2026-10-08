@@ -1,0 +1,38 @@
+# Obsidian 関連
+/*/.obsidian/*
+!/pkm-storage-vault/.obsidian/app.json
+!/pkm-storage-vault/.obsidian/core-plugins.json
+!/pkm-storage-vault/.obsidian/community-plugins.json
+/*/.trash/
+
+# PKM-Framework 由来のディレクトリ
+.pkm/runtime/
+.pkm/cache/
+.pkm/managed-resources.json
+.pkm/setup-incomplete
+.pkm/setup.lock
+.agents/skills/
+
+# PKM-Framework から mise run setup で配置される予約済みファイル
+# BEGIN PKM Framework managed files
+/mise/scripts/schedule.sh
+/mise/scripts/scheduler-windows.ps1
+/mise/scripts/scheduler.py
+/mise/scripts/storage.sh
+/mise/scripts/sync.py
+/mise/tasks/index.sh
+/mise/tasks/mcp.sh
+/mise/tasks/read.sh
+/mise/tasks/schedule-install.sh
+/mise/tasks/schedule-status.sh
+/mise/tasks/schedule-uninstall.sh
+/mise/tasks/search.sh
+/mise/tasks/skills-install.sh
+/mise/tasks/sync.sh
+/pkm-storage-vault/AGENTS.framework.md
+# END PKM Framework managed files
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride

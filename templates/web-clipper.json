@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "0.1.0",
+  "name": "PKM Storage",
+  "behavior": "create",
+  "noteNameFormat": "{{time|date:\"YYYYMMDD-HHmmss-SSS\"}}",
+  "path": "raw/clips",
+  "properties": [
+    { "name": "title", "value": "{{title}}", "type": "text" },
+    { "name": "url", "value": "{{url}}", "type": "text" },
+    { "name": "saved_at", "value": "{{time|date:\"YYYY-MM-DDTHH:mm:ssZ\"}}", "type": "text" }
+  ],
+  "noteContentFormat": "# {{title}}\n\n{{content}}",
+  "triggers": []
+}

@@ -1,0 +1,12 @@
+[project]
+name = "pkm-storage-runtime"
+version = "0.1.0"
+description = "Runtime dependencies for this PKM storage"
+requires-python = ">=3.12"
+dependencies = ["pkm-framework"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+pkm-framework = { path = "../../pkm-framework", editable = true }
