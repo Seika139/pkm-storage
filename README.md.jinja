@@ -43,6 +43,8 @@ Copier は template との差分を作業ツリーへ適用します。競合は
 
 ### 1. Storage リポジトリを clone する
 
+Copier で初回生成した PC では、すでに Private repository の clone 内にいます。そのまま次の setup に進んでください。別 PC で利用するときは下記のように clone します。初回生成では、Terraform が作成した repository を clone した後、そのルートで公開 template の Copier を実行します。詳しくは [公開 template の README](https://github.com/Seika139/pkm-storage) を参照してください。
+
 Storage は GitHub 上の Framework のリリース tag を依存先として使うため、Framework repo を隣に clone する必要はありません。
 
 ```bash
