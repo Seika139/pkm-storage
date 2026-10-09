@@ -24,7 +24,7 @@ uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
 
 `--vcs-ref` には Copier 設定を含む公開済み `pkm-storage` の tag を指定します。`--overwrite` は Terraform が作った初期 README をテンプレートの README に置き換えるために必要です。質問される `repo_name` は clone 先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
 
-Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。
+Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。clone 時に `origin` と `main` の upstream も設定されるため、初回 push は `git push` を実行してください。
 
 ```bash
 mise install
@@ -34,7 +34,7 @@ git status --short
 git diff
 git add -A
 git commit -m "chore: initialize from pkm-storage template"
-git push --set-upstream origin main
+git push
 ```
 
 以後この Private repository を別の PC で使うときは、通常どおりその repository を clone して `mise run setup` を実行します。
