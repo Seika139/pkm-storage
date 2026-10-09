@@ -330,8 +330,8 @@ wheels = [
 
 [[package]]
 name = "pkm-framework"
-version = "0.1.1"
-source = { git = "https://github.com/Seika139/pkm-framework.git?tag=v0.1.1#fa182b8560358e679e9a0bdeed8713a7252a03f2" }
+version = "0.1.3"
+source = { git = "https://github.com/Seika139/pkm-framework.git?tag=v0.1.3#7f53e5451553b6482e164c40856b20e7cda97f7f" }
 dependencies = [
     { name = "mcp" },
 ]
@@ -345,7 +345,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pkm-framework", git = "https://github.com/Seika139/pkm-framework.git?tag=v0.1.1" }]
+requires-dist = [{ name = "pkm-framework", git = "https://github.com/Seika139/pkm-framework.git?tag=v0.1.3" }]
 
 [[package]]
 name = "pycparser"
