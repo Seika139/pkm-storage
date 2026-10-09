@@ -9,4 +9,4 @@ dependencies = ["pkm-framework"]
 package = false
 
 [tool.uv.sources]
-pkm-framework = { path = "../../pkm-framework", editable = true }
+pkm-framework = { git = "https://github.com/Seika139/pkm-framework.git", tag = "v0.1.3" }
