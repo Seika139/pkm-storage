@@ -1,0 +1,32 @@
+---
+_min_copier_version: "9.6.0"
+
+# These conditional patterns protect private data and Framework-managed files.
+# Defining _exclude replaces Copier defaults, so preserve them below.
+_exclude:
+  - copier.yml
+  - copier.yaml
+  - "~*"
+  - "*.py[co]"
+  - __pycache__
+  - .git
+  - .DS_Store
+  - .svn
+  - /OPERATIONAL-PLAN.md
+  - |
+    {% if _copier_operation == 'update' -%}
+    /pkm-storage-vault/**
+    /.gitignore
+    /.pkm/pyproject.toml
+    /.pkm/uv.lock
+    {% endif %}
+
+repo_name:
+  type: str
+  default: "{{ _copier_conf.dst_path.name }}"
+  help: GitHub repository name for the generated private PKM project.
+
+repo_owner:
+  type: str
+  default: Seika139
+  help: GitHub user or organization that owns the generated repository.

@@ -1,4 +1,4 @@
-# PKM Storage
+# PKM Storage Template
 
 <div align="center">
   <a href="https://github.com/Seika139/pkm-storage/releases/tag/v0.1.0">
@@ -10,179 +10,52 @@
   </a>
 </div>
 
-Web Clipper で見つけたページを Markdown として保存し、Obsidian と検索ツールから読み返すための個人用ナレッジストレージです。保存した Markdown が正本で、検索用の SQLite 索引は必要に応じて作り直せます。
+この public repository は Copier template です。個人用 PKM を作るときは、Private な GitHub repository に Copier で初期生成し、必要な template 更新だけを後から取り込みます。知識データや secret 値はこの template に置かず、生成した Private repository で管理してください。
 
-## まず使う
+## Private repository を作成する
 
-### 必要なもの
-
-- [Git](https://git-scm.com/) と [mise](https://mise.jdx.dev/)。
-- [Obsidian](https://obsidian.md/download)。
-- 利用するブラウザ用の [Obsidian Web Clipper](https://obsidian.md/help/web-clipper)。
-
-`mise.toml` は uv `0.12.23` と `git-secrets` を固定します。`mise install` で両方を導入してください。初回 bootstrap は `uv run --python 3.12 --no-project` で起動するため、システムに Python を別途インストールする必要はありません。uv は必要な Python 3.12 を管理環境へ自動で導入します（[uv の Python 管理](https://docs.astral.sh/uv/guides/install-python/)）。
-
-`mise install` はこの repo が固定する uv と `git-secrets` をインストールします。
-
-### 1. Storage リポジトリを clone する
-
-Storage は GitHub 上の Framework のリリース tag を依存先として使うため、Framework repo を隣に clone する必要はありません。
+先に `~/programs/.github` の Terraform で空の Private repository を作り、その名前と owner を使って Copier でローカルへ生成します。Copier は repository の作成、Git の初期化、remote の設定、commit / push、`mise run setup` を実行しません。
 
 ```bash
-git clone https://github.com/Seika139/pkm-storage.git
-cd pkm-storage
+mise install
+uvx copier copy --vcs-ref "vX.Y.Z" gh:Seika139/pkm-storage pkm-storage-alpha
 ```
 
-### 2. Framework の実行環境と共通ファイルを準備する
+`vX.Y.Z` は Copier 設定を含む公開済み `pkm-storage` の tag に置き換えてください。質問される `repo_name` は生成先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
 
-`pkm-storage` のルートで実行します。最初は Storage に追跡されている `setup.sh` が Framework の導入を担当します。mise の task script に実行権限を付けてから setup を実行してください。
-
-```bash
-mise install                    # uv 0.12.23 と git-secrets をインストール
-mise run grant-permissions      # mise task script に実行権限を付与
-mise run setup                  # uv で固定依存を解決し、共通ファイルと Skills を配置
-```
-
-`mise run setup` は `.pkm/uv.lock` に固定された Framework で `uv sync --locked` を実行し、Framework の `mise/tasks/`、`mise/scripts/`、共通 Vault 規約、Skills を配置します。`.pkm/runtime/`、`.agents/skills/`、配布 manifest と共通規約は生成物として Git 管理しません。初回 clone と修復に使う `mise/tasks/setup.sh` と `.pkm/setup_bootstrap.py` は Storage に残る安定 bootstrap です。setup 中は `.pkm/setup-incomplete` が存在し、失敗時も marker が残ります。setup が終わるまで Framework task と Wiki 書き込みは停止します。
-
-Storage に固有の mise task や script を追加する場合は、Framework が予約していない名前を使ってください。`.gitignore` の `PKM Framework managed files` block は配布 manifest から生成され、周囲のユーザー設定を残したまま、将来追加される managed path も無視対象へ反映します。block 内を編集した場合は setup が停止します。`mise.toml` の `grant-permissions` など Storage 固有の設定、`mise/tasks/setup.sh`、`.pkm/setup_bootstrap.py`、独自ファイルは Framework の setup で置換・削除されません。Managed task/script の更新はファイル hash を照合し、手編集を検知した場合は停止します。
-
-`pkm-storage-vault/AGENTS.md` は Storage 固有の安定した規約ファイルで、共通規約は Framework から `AGENTS.framework.md` に配置します。共通規約は Git 管理外で再生成可能です。AI / MCP の `wiki_context` は両ファイルの本文とパスを返し、共通規約が欠けている場合は Wiki 書き込みを拒否して setup による修復を案内します。
-
-`.pkm/pyproject.toml` は `pkm-framework` を GitHub の明示した tag に固定し、`.pkm/uv.lock` はその tag が指す commit と依存バージョンを記録します。Framework の新しい tag を Storage に取り込む場合は、Storage root で次の手順を実行してください。
-
-1. `.pkm/pyproject.toml` の `pkm-framework` source にある `tag` を新しい Framework tag に更新します。
-2. lockfile を再生成し、固定 tag に対応する解決済み commit を記録します。
-3. setup を実行して、更新した lockfile から環境と Framework 管理ファイルを同期します。
-4. `.pkm/pyproject.toml` と `.pkm/uv.lock` の差分を確認して一緒に commit します。
+生成先を Private repository の remote に接続し、初回 setup・push を手動で行います。
 
 ```bash
-# .pkm/pyproject.toml の tag を新しいリリースに変更してから実行
-mise exec -- uv lock --project .pkm
+cd pkm-storage-alpha
+git init -b main
+git remote add origin git@github.com:Seika139/pkm-storage-alpha.git
+mise install
+mise run grant-permissions
 mise run setup
-git diff -- .pkm/pyproject.toml .pkm/uv.lock
-git add .pkm/pyproject.toml .pkm/uv.lock
-git commit -m "chore: update pkm-framework"
-```
-
-依存 tag を自動で最新版へ追従させず、利用するリリースを明示的に選びます。中断された managed-resource 更新は journal の expected hash/mode と現在の状態が一致する場合だけ自動 rollback します。人手の編集を検知すると既存ファイルと journal を保護して停止するため、内容を確認してから手動で解消してください。
-
-### 3. Obsidian で vault を開く
-
-Obsidian の「保管庫としてフォルダを開く（Open folder as vault）」を選び、この repo の `pkm-storage-vault/` を指定してください。既存の vault を開く操作なので、新しい空の vault を作る必要はありません。Obsidian の vault 名はフォルダ名と同じため、表示名も `pkm-storage-vault` になります。現在このディレクトリが `vault/` という名前の場合は、そのフォルダを開いてから Obsidian の [Manage vaults](https://obsidian.md/help/manage-vaults) で名前を `pkm-storage-vault` に変更してください。Obsidian がフォルダ名も変更します。Framework はフォルダ名ではなく `.pkm-storage` マーカーから vault を見つけるため、この名前を使えます。
-
-```text
-pkm-storage/pkm-storage-vault/
-├── .obsidian/   Obsidian の設定
-├── assets/      添付ファイル置き場
-├── raw/clips/   Web Clipper で保存したページ
-└── wiki/        整理した知識
-```
-
-`.obsidian/` のうち Git で共有するのは許可リストにある設定だけです。その他の画面状態や端末固有設定は Git 管理されません。
-
-### 4. Web Clipper をインストールして保存先を設定する
-
-ブラウザの公式ストアから拡張機能をインストールします。
-
-- [Chrome Web Store](https://chromewebstore.google.com/detail/obsidian-web-clipper/cnjifjpddelmedmihgijeibhnjfabmlf)（Chrome、Brave、Arc、Orion、その他 Chromium 系ブラウザ）。
-- [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/web-clipper-obsidian/)。
-- [Microsoft Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/obsidian-web-clipper/eigdjhmgnaaeaonimdklocfekkaanfme)。
-- [Safari Extensions（App Store）](https://apps.apple.com/us/app/obsidian-web-clipper/id6720708363)。
-
-Web Clipper の設定と保存画面で次の操作を行います。
-
-1. Web Clipper の **Settings** にある **Vault** 欄へ `pkm-storage-vault` と入力し、Enter を押して登録します。ここには `pkm-storage/pkm-storage-vault/` のようなフォルダパスではなく、Obsidian に表示される vault 名を入力してください。
-2. **Settings → Templates** で [templates/web-clipper.json](templates/web-clipper.json) を Import します。画面への JSON ファイルのドラッグ＆ドロップでも取り込めます。
-3. ページを clip するときは、ポップアップ下部の **Vault** dropdown で `pkm-storage-vault` を選び、**Folder** field に `raw/clips` を指定します。テンプレートにも保存先が設定されていますが、保存画面で保存先を確認・変更できます。詳しくは [Web Clipper の保存画面](https://obsidian.md/help/web-clipper/capture)を参照してください。
-
-Web Clipper に以前 `vault` を登録していた場合は、Settings でその登録を削除し、`pkm-storage-vault` を追加してください。Web Clipper の vault 名は Obsidian に表示される名前と完全に一致する必要があります。
-
-テンプレート `PKM Storage` は `raw/clips/` に新規 Markdown を作ります。パスは vault からの相対パスなので、`pkm-storage-vault/raw/clips/` ではなく `raw/clips/` です。本文にはページタイトルと抽出された内容、プロパティには URL と保存日時を記録します。
-
-### 5. ページを保存して検索する
-
-Web Clipper で `PKM Storage` テンプレートを選び、ページを1つ保存してください。`pkm-storage-vault/raw/clips/` に Markdown ファイルができたら、初回の全索引を作成して検索します。
-
-```bash
-mise run index
-mise run search -- "検索したい語"
-```
-
-`index` は全 Markdown の索引を再構築します。以降の `search` は Markdown の追加・変更・削除を差分反映してから検索するため、保存のたびに `index` を実行する必要はありません。ファイルを読む場合は次のように vault 相対パスを指定します。
-
-```bash
-mise run read -- raw/clips/保存したファイル名.md
-```
-
-## タスク
-
-- `mise run setup` は固定された Framework の依存関係、管理対象 task/script、共通 Vault 規約、Skills を準備または更新します。失敗時は setup incomplete marker が残り、修復が完了するまで Framework managed task は実行できません。setup を再実行してください。
-- `mise run skills-install` は Skills だけを再配置します。Framework 管理ファイルも含む更新には `mise run setup` を使います。
-- `mise run index` は FTS 索引を全再構築します。
-- `mise run search -- <検索語>` は索引を差分更新して検索します。
-- `mise run read -- <vault相対パス>` は Markdown を読みます。
-- `mise run mcp` は `search`、`read`、Vault 規約の取得、ガード付き Wiki 変更を提供する MCP server を stdio で起動します。AI クライアントごとの MCP 登録は各クライアントで別途設定してください。
-- `mise run sync` は許可された Vault の変更を commit し、設定済み remote と同期します。
-- `mise run schedule-install`, `mise run schedule-status`, `mise run schedule-uninstall` は、このユーザーの定時同期を登録・確認・解除します。
-
-### 定時 Git 同期
-
-定時同期は、おおむね1時間ごとに `mise run sync` を実行します。OS のユーザー単位スケジューラーを使い、常駐プロセスは追加しません。
-
-有効化する前に、この Storage の現在のブランチへ remote と upstream を設定してください。remote または upstream がない場合、同期は変更を commit する前に停止します。スケジュールを登録しても、remote を設定するまでは Git 同期されません。
-
-```bash
-# 現在の branch / remote / upstream を確認
-git status -sb
-git remote -v
-
-# 同期先を設定する例。実際の URL と branch 名を使う
-git remote add origin <private-storage-repository-url>
+git add -A
+git commit -m "chore: initialize from pkm-storage template"
 git push --set-upstream origin main
-
-# まず手動で同期を実行し、結果を確認してからスケジュール登録
-mise run sync
-mise run schedule-install
-mise run schedule-status
 ```
 
-`mise run schedule-install` は OS に応じて macOS LaunchAgent、Windows Task Scheduler、または Linux の systemd user timer を現在のユーザー用に登録します。登録した同期の解除には `mise run schedule-uninstall` を使います。登録時の `PATH` を各 scheduler に保存するため、mise・uv・Git のインストール先を変えた場合は `mise run schedule-install` を再実行してください。macOS LaunchAgent と Windows Task Scheduler はログオン中のユーザーセッションで動作します。Ubuntu では `systemctl --user` が使えるユーザーセッションが必要です。ログアウト後も user timer を実行するには systemd の lingering 設定が必要ですが、このコマンドは lingering を有効化しません。必要性を確認したうえで、OS の手順に沿って別途設定してください。
+以後この Private repository を別の PC で使うときは、通常どおりその repository を clone して `mise run setup` を実行します。
 
-自動 commit の対象は `pkm-storage-vault/raw/clips/`、`pkm-storage-vault/assets/`、`pkm-storage-vault/wiki/` です。`.obsidian/`、Storage repo の root、`.pkm/`、`.agents/`、その他の path は対象外です。commit 対象外の変更、既存の staged changes、merge など進行中の Git 操作がある場合は同期を停止し、手動確認を求めます。同期は Git hooks を通常どおり実行し、hook が失敗した場合も停止します。commit 前に停止した場合は index と working tree を確認してから再実行してください。
+## Template 更新を取り込む
 
-同期順序は allowlist 内の変更の commit、remote の fetch、upstream の merge、push です。各 Git コマンドは最大5分で停止します。履歴が分岐しても競合がなければ Git の merge commit を作れます。競合時は自動解決せず、競合状態を残して停止します。reset、autostash、force push は行わず、merge で ignored file を上書きしない設定を使います。そのため ignored file が merge を妨げる場合も同期は停止し、手動確認が必要です。push は自動作成 commit だけでなく、現在の branch にある未 push の commit をすべて upstream へ送ります。
-
-Framework の WikiWriter と同期処理は `.pkm/cache/wiki-writer.sqlite` の同じプロセス間ロックを使います。Wiki 更新中に同期時刻になった場合はその回を skip し、次の時刻に再試行します。Web Clipper や Obsidian はこのロックを使わないため、同期開始前に Git の状態を確認し、競合した変更を自動解決しません。
-
-同期ログは `.pkm/cache/logs/sync.log` に保存され、最大1 MiBのファイルを3世代まで保持します。Linux の systemd user timer の実行状況は `mise run schedule-status`、macOS の LaunchAgent と Windows のタスク状態も同じ task で確認できます。
-
-### Codex から MCP を使う
-
-セットアップ済みの `pkm-storage` を Codex に登録します。`mise/tasks/mcp.sh` は自身の場所から Storage root を解決するため、`cwd` の指定は不要です。
+Private repository で作業を commit し、working tree が clean な状態にしてから、取り込みたい `pkm-storage` のリリース tag を指定します。
 
 ```bash
-codex mcp add pkm-storage -- /absolute/path/to/pkm-storage/mise/tasks/mcp.sh
-codex mcp list
+mise install
+uvx copier update --vcs-ref v0.2.0
+git status --short
+git diff
 ```
 
-1行目の `/absolute/path/to/pkm-storage` は、この端末に clone した実際の絶対パスに置き換えてください。別の clone や端末では、その場所の絶対パスを使って登録し直します。Codex CLI と IDE extension は MCP 設定を共有します。詳しくは [Codex の MCP 設定](https://developers.openai.com/learn/docs-mcp)を参照してください。
+Copier は差分を作業ツリーへ適用します。競合は人が確認して手動で解決し、差分を review してから通常の Git 操作で commit / push してください。Copier 自身は remote 操作や Git 操作をしません。
 
-AI / MCP による Wiki 変更は working tree に残り、AI / MCP 自身は commit / push しません。定時同期を有効にした場合は、Wiki・索引・ログを含む allowlist 内の変更が次の同期時に自動で commit / push されます。定時同期を使わない場合は、`git diff` で Wiki・索引・ログを確認してから手動で commit してください。
+`pkm-storage-vault/**`、`.gitignore`、`.pkm/pyproject.toml`、`.pkm/uv.lock` は初回生成時だけ seed され、その後の Copier 更新では変更も再生成もされません。個人ナレッジは vault に保存できます。Framework の更新は別経路で、`.pkm/pyproject.toml` の Git tag と `.pkm/uv.lock` を更新して取り込みます。
 
-検索索引と Python 環境は `.pkm/cache/` と `.pkm/runtime/` に置かれ、Git 管理外です。Markdown が残っていれば `mise run index` でいつでも再生成できます。
+`CHANGELOG.md` と README の release / CI links は生成先の owner と repository 名に合わせます。生成直後の version badge は未リリースを表す `v0.0.0` で、初回 release workflow が実際の version とリンクに更新します。コピー元の release 履歴は生成先へ持ち込みません。
 
-## 保存時の注意
+## Template 自身の変更
 
-- Web Clipper は選択中のテキストやハイライトがあると、その部分だけを保存することがあります。ページ全体を保存したい場合は選択やハイライトを解除してください。
-- ページ抽出結果はサイトにより異なり、動画本体やログイン後の全内容が保存されるとは限りません。
-- 画像は通常、元サイトへの URL として Markdown に残り、Vault へは自動ダウンロードされません。詳細は[Web Clipper の公式ガイド](https://obsidian.md/help/web-clipper/capture)を参照してください。
-- 保存物には Web ページの本文が含まれます。Storage repo の公開範囲と共有先を確認してください。
-
-## 関連ドキュメント
-
-- [Obsidian のインストール](https://obsidian.md/help/install)
-- [Web Clipper のインストールと使い方](https://obsidian.md/help/web-clipper)
-- [Web Clipper のテンプレート](https://obsidian.md/help/web-clipper/templates)
-- [Web Clipper のトラブルシューティング](https://obsidian.md/help/web-clipper/troubleshoot)
-- [Obsidian の vault 管理](https://obsidian.md/help/manage-vaults)
+`README.md.jinja` と `CHANGELOG.md.jinja` は Copier が生成先向けに描画するファイルです。テンプレートと生成後プロジェクトに適用する変更は両方の表示先を意識し、公開 template の `CHANGELOG.md` では `## [Unreleased]` だけを更新してください。タグと Release はリリース時に追加します。
