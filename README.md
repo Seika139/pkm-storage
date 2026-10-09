@@ -14,27 +14,27 @@
 
 ## Private repository を作成する
 
-先に `~/programs/.github` の Terraform で空の Private repository を作り、その名前と owner を使って Copier でローカルへ生成します。Copier は repository の作成、Git の初期化、remote の設定、commit / push、`mise run setup` を実行しません。
+先に `~/programs/.github` の Terraform で Private repository を作ります。Terraform は `auto_init = true` で `main` に初期 README を作るため、その repository を clone してから Copier を適用します。`uvx` が使える環境で次を実行してください。
 
 ```bash
-mise install
-uvx copier copy --vcs-ref "vX.Y.Z" gh:Seika139/pkm-storage pkm-storage-alpha
+git clone git@github.com:Seika139/pkm-storage-alpha.git
+cd pkm-storage-alpha
+uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
 ```
 
-`vX.Y.Z` は Copier 設定を含む公開済み `pkm-storage` の tag に置き換えてください。質問される `repo_name` は生成先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
+`--vcs-ref` には Copier 設定を含む公開済み `pkm-storage` の tag を指定します。`--overwrite` は Terraform が作った初期 README をテンプレートの README に置き換えるために必要です。質問される `repo_name` は clone 先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
 
-生成先を Private repository の remote に接続し、初回 setup・push を手動で行います。
+Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。clone 時に `origin` と `main` の upstream も設定されるため、初回 push は `git push` を実行してください。
 
 ```bash
-cd pkm-storage-alpha
-git init -b main
-git remote add origin git@github.com:Seika139/pkm-storage-alpha.git
 mise install
 mise run grant-permissions
 mise run setup
+git status --short
+git diff
 git add -A
 git commit -m "chore: initialize from pkm-storage template"
-git push --set-upstream origin main
+git push
 ```
 
 以後この Private repository を別の PC で使うときは、通常どおりその repository を clone して `mise run setup` を実行します。

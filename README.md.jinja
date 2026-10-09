@@ -43,6 +43,8 @@ Copier は template との差分を作業ツリーへ適用します。競合は
 
 ### 1. Storage リポジトリを clone する
 
+Copier で初回生成した PC では、すでに Private repository の clone 内にいます。そのまま次の setup に進んでください。別 PC で利用するときは下記のように clone します。初回生成では、Terraform が作成した repository を clone した後、そのルートで公開 template の Copier を実行します。詳しくは [公開 template の README](https://github.com/Seika139/pkm-storage) を参照してください。
+
 Storage は GitHub 上の Framework のリリース tag を依存先として使うため、Framework repo を隣に clone する必要はありません。
 
 ```bash
@@ -149,16 +151,19 @@ mise run read -- raw/clips/保存したファイル名.md
 
 定時同期は、おおむね1時間ごとに `mise run sync` を実行します。OS のユーザー単位スケジューラーを使い、常駐プロセスは追加しません。
 
-有効化する前に、この Storage の現在のブランチへ remote と upstream を設定してください。remote または upstream がない場合、同期は変更を commit する前に停止します。スケジュールを登録しても、remote を設定するまでは Git 同期されません。
+有効化する前に、この Storage の現在のブランチに remote と upstream が設定されていることを確認してください。Terraform が作成した repository を clone した場合は、`origin` と `main` の upstream が既に設定されているため、状態確認だけで構いません。remote または upstream がない場合は、足りない設定だけを追加してください。`origin` が既にある場合に `git remote add origin` を再実行すると失敗します。remote または upstream がない状態では同期は変更を commit する前に停止します。
 
 ```bash
 # 現在の branch / remote / upstream を確認
 git status -sb
 git remote -v
+git branch -vv
 
-# 同期先を設定する例。実際の URL と branch 名を使う
+# origin がない場合だけ追加する
 git remote add origin <private-storage-repository-url>
-git push --set-upstream origin main
+
+# 現在の branch に upstream がない場合だけ実行する
+git push --set-upstream origin <current-branch>
 
 # まず手動で同期を実行し、結果を確認してからスケジュール登録
 mise run sync
