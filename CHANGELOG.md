@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Copier で個人用 Storage repository を生成し、タグ付きテンプレート更新を取り込めるようにしました。
+
 ## [0.1.0] - 2026-10-09
 
 ### Added
