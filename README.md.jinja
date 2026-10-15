@@ -16,11 +16,11 @@ Web Clipper で見つけたページを Markdown として保存し、Obsidian �
 
 この repository は公開 template `Seika139/pkm-storage` から生成されています。`.copier-answers.yml` には template の参照先と repository 名などの非機密情報だけが記録されます。
 
-template の新しいリリースを取り込むには、変更を commit して working tree が clean な状態で、取り込みたい tag を指定します。
+template の新しいリリースを取り込むには、変更を commit して working tree が clean な状態で実行します。tag を省略すると最新リリースが適用されます。特定のバージョンへ更新する場合だけ `--vcs-ref` に tag を指定してください。
 
 ```bash
 mise install uv
-mise exec uv -- uvx copier update --vcs-ref v0.2.0
+mise exec uv -- uvx copier update
 git status --short
 git diff
 ```

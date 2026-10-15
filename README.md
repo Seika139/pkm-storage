@@ -1,8 +1,8 @@
 # PKM Storage Template
 
 <div align="center">
-  <a href="https://github.com/Seika139/pkm-storage/releases/tag/v0.2.1">
-    <img alt="version" src="https://img.shields.io/badge/version-v0.2.1-white.svg">
+  <a href="https://github.com/Seika139/pkm-storage/releases/tag/v0.3.0">
+    <img alt="version" src="https://img.shields.io/badge/version-v0.3.0-white.svg">
   </a>
   &nbsp;&nbsp;
   <a href="https://github.com/Seika139/pkm-storage/actions/workflows/ci.yml">
@@ -19,10 +19,10 @@
 ```bash
 git clone git@github.com:Seika139/pkm-storage-alpha.git
 cd pkm-storage-alpha
-uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
+uvx copier copy --overwrite gh:Seika139/pkm-storage .
 ```
 
-`--vcs-ref` には Copier 設定を含む公開済み `pkm-storage` の tag を指定します。`--overwrite` は Terraform が作った初期 README をテンプレートの README に置き換えるために必要です。質問される `repo_name` は clone 先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
+tag を省略すると最新リリースの template が使われます。特定のバージョンを使う場合だけ `--vcs-ref` に公開済み `pkm-storage` の tag を指定してください。`--overwrite` は Terraform が作った初期 README をテンプレートの README に置き換えるために必要です。質問される `repo_name` は clone 先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
 
 Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。clone 時に `origin` と `main` の upstream も設定されるため、初回 push は `git push` を実行してください。
 
@@ -45,11 +45,11 @@ git push
 
 ## Template 更新を取り込む
 
-Private repository で作業を commit し、working tree が clean な状態にしてから、取り込みたい `pkm-storage` のリリース tag を指定します。
+Private repository で作業を commit し、working tree が clean な状態にしてから実行します。tag を省略すると最新リリースが適用されます。特定のバージョンへ更新する場合だけ `--vcs-ref` に tag を指定してください。
 
 ```bash
 mise install uv
-mise exec uv -- uvx copier update --vcs-ref v0.2.0
+mise exec uv -- uvx copier update
 git status --short
 git diff
 ```
