@@ -19,13 +19,13 @@ Web Clipper で見つけたページを Markdown として保存し、Obsidian �
 template の新しいリリースを取り込むには、変更を commit して working tree が clean な状態で、取り込みたい tag を指定します。
 
 ```bash
-mise install
-mise exec -- uvx copier update --vcs-ref v0.2.0
+mise install uv
+mise exec uv -- uvx copier update --vcs-ref v0.2.0
 git status --short
 git diff
 ```
 
-`mise exec -- uvx` は mise 管理下の uv を使って Copier を起動します。Copier は template との差分を作業ツリーへ適用します。競合は手動で解決し、適用された差分を review してから通常の Git 操作で commit / push してください。Copier は setup、Git 初期化、remote 操作、commit / push を実行しません。
+`mise exec uv -- uvx` は mise 管理下の uv を使って Copier を起動します。template 更新に必要なツールは uv だけなので、対象を `uv` に限定します。全ツールを対象にすると、更新前の `mise.toml` に Windows 非対応の `git-secrets` が OS filter なしで残っている場合（v0.2.1 以前から生成した repository）に、Windows では Copier の起動前にツール導入で失敗します。Copier は template との差分を作業ツリーへ適用します。競合は手動で解決し、適用された差分を review してから通常の Git 操作で commit / push してください。Copier は setup、Git 初期化、remote 操作、commit / push を実行しません。
 
 `pkm-storage-vault/**` と Framework 管理ファイルの `.gitignore`、`.pkm/pyproject.toml`、`.pkm/uv.lock` は初回生成時だけ seed され、template 更新では変更・再生成されません。Framework 自体の更新は tag と lockfile を使う別の手順で行います。生成先 repository 名は `{{ repo_owner }}/{{ repo_name }}` です。
 

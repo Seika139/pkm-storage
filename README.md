@@ -48,13 +48,13 @@ git push
 Private repository で作業を commit し、working tree が clean な状態にしてから、取り込みたい `pkm-storage` のリリース tag を指定します。
 
 ```bash
-mise install
-mise exec -- uvx copier update --vcs-ref v0.2.0
+mise install uv
+mise exec uv -- uvx copier update --vcs-ref v0.2.0
 git status --short
 git diff
 ```
 
-Copier は差分を作業ツリーへ適用します。競合は人が確認して手動で解決し、差分を review してから通常の Git 操作で commit / push してください。Copier 自身は remote 操作や Git 操作をしません。
+template 更新に必要なツールは uv だけなので、対象を `uv` に限定して導入・実行します。全ツールを対象にすると、更新前の `mise.toml` に Windows 非対応の `git-secrets` が OS filter なしで残っている場合に、Windows では Copier の起動前にツール導入で失敗します。Copier は差分を作業ツリーへ適用します。競合は人が確認して手動で解決し、差分を review してから通常の Git 操作で commit / push してください。Copier 自身は remote 操作や Git 操作をしません。
 
 `pkm-storage-vault/**`、`.gitignore`、`.pkm/pyproject.toml`、`.pkm/uv.lock` は初回生成時だけ seed され、その後の Copier 更新では変更も再生成もされません。個人ナレッジは vault に保存できます。Framework の更新は別経路で、`.pkm/pyproject.toml` の Git tag と `.pkm/uv.lock` を更新して取り込みます。
 
