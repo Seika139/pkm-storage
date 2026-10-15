@@ -19,7 +19,7 @@
 ```bash
 git clone git@github.com:Seika139/pkm-storage-alpha.git
 cd pkm-storage-alpha
-uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
+uvx copier copy --overwrite --vcs-ref v0.3.0 gh:Seika139/pkm-storage .
 ```
 
 `--vcs-ref` には Copier 設定を含む公開済み `pkm-storage` の tag を指定します。`--overwrite` は Terraform が作った初期 README をテンプレートの README に置き換えるために必要です。質問される `repo_name` は clone 先ディレクトリ名が初期値です。GitHub repository 名と違う場合だけ変更してください。`repo_owner` の初期値は `Seika139` です。これらの値は `.copier-answers.yml` に記録され、secret は質問にも記録にも含まれません。
@@ -49,7 +49,7 @@ Private repository で作業を commit し、working tree が clean な状態に
 
 ```bash
 mise install uv
-mise exec uv -- uvx copier update --vcs-ref v0.2.0
+mise exec uv -- uvx copier update --vcs-ref v0.3.0
 git status --short
 git diff
 ```
