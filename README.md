@@ -26,6 +26,8 @@ uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
 
 Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。clone 時に `origin` と `main` の upstream も設定されるため、初回 push は `git push` を実行してください。
 
+`mise.toml` は Python `3.12` と uv `0.12.23` を固定します。Storage の setup と Framework task の実行では、`mise install` で両方を mise 管理下に導入するため、別途システム Python や uv は不要です。初回の Copier 実行には `uvx` が必要です。`git-secrets` も依存に残していますが、mise の設定により Linux / macOS でのみ導入され、Windows では導入されません。
+
 ```bash
 mise install
 mise run grant-permissions
@@ -37,6 +39,8 @@ git commit -m "chore: initialize from pkm-storage template"
 git push
 ```
 
+初回 setup の `mise/tasks/setup.sh` は Bash script です。Windows の native PowerShell からは実行できないため、Windows では mise とツールが使える Bash 環境から上記コマンドを実行してください。setup 完了後に Framework が配置する mise task は Python file task で、`mise run <task>` として実行します。
+
 以後この Private repository を別の PC で使うときは、通常どおりその repository を clone して `mise run setup` を実行します。
 
 ## Template 更新を取り込む
@@ -45,7 +49,7 @@ Private repository で作業を commit し、working tree が clean な状態に
 
 ```bash
 mise install
-uvx copier update --vcs-ref v0.2.0
+mise exec -- uvx copier update --vcs-ref v0.2.0
 git status --short
 git diff
 ```
