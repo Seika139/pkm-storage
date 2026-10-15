@@ -26,6 +26,8 @@ uvx copier copy --overwrite --vcs-ref v0.2.0 gh:Seika139/pkm-storage .
 
 Copier 適用後に、生成した設定を確認してから初回 setup・commit・push を行います。clone 済みなので Git の初期化と remote 設定は不要です。clone 時に `origin` と `main` の upstream も設定されるため、初回 push は `git push` を実行してください。
 
+`mise.toml` は Python `3.12` と uv `0.12.23` を固定します。Storage の setup と Framework task の実行では、`mise install` で両方を mise 管理下に導入するため、別途システム Python や uv は不要です。初回の Copier 実行には `uvx` が必要です。`git-secrets` も依存に残していますが、mise の設定により Linux / macOS でのみ導入され、Windows では導入されません。
+
 ```bash
 mise install
 mise run grant-permissions
@@ -37,6 +39,8 @@ git commit -m "chore: initialize from pkm-storage template"
 git push
 ```
 
+初回 setup の `mise/tasks/setup.sh` は Bash script です。Windows の native PowerShell からは実行できないため、Windows では mise とツールが使える Bash 環境から上記コマンドを実行してください。setup 完了後に Framework が配置する mise task は Python file task で、`mise run <task>` として実行します。
+
 以後この Private repository を別の PC で使うときは、通常どおりその repository を clone して `mise run setup` を実行します。
 
 ## Template 更新を取り込む
@@ -44,13 +48,13 @@ git push
 Private repository で作業を commit し、working tree が clean な状態にしてから、取り込みたい `pkm-storage` のリリース tag を指定します。
 
 ```bash
-mise install
-uvx copier update --vcs-ref v0.2.0
+mise install uv
+mise exec uv -- uvx copier update --vcs-ref v0.2.0
 git status --short
 git diff
 ```
 
-Copier は差分を作業ツリーへ適用します。競合は人が確認して手動で解決し、差分を review してから通常の Git 操作で commit / push してください。Copier 自身は remote 操作や Git 操作をしません。
+template 更新に必要なツールは uv だけなので、対象を `uv` に限定して導入・実行します。全ツールを対象にすると、更新前の `mise.toml` に Windows 非対応の `git-secrets` が OS filter なしで残っている場合に、Windows では Copier の起動前にツール導入で失敗します。Copier は差分を作業ツリーへ適用します。競合は人が確認して手動で解決し、差分を review してから通常の Git 操作で commit / push してください。Copier 自身は remote 操作や Git 操作をしません。
 
 `pkm-storage-vault/**`、`.gitignore`、`.pkm/pyproject.toml`、`.pkm/uv.lock` は初回生成時だけ seed され、その後の Copier 更新では変更も再生成もされません。個人ナレッジは vault に保存できます。Framework の更新は別経路で、`.pkm/pyproject.toml` の Git tag と `.pkm/uv.lock` を更新して取り込みます。
 
