@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `git-secrets` は upstream が Windows 非対応のため、Linux / macOS でのみ導入するようにしました ([#11](https://github.com/Seika139/pkm-storage/pull/11))
 - template 更新の手順を `mise install uv` + `mise exec uv -- uvx copier update` に変更し、旧バージョンから生成した Windows の repository でも更新を取り込めるようにしました ([#11](https://github.com/Seika139/pkm-storage/pull/11))
 - Codex への MCP 登録を `mise run --raw -C` 方式に変更しました。旧 `mise/tasks/mcp.sh` の直指定で登録済みの端末は再登録が必要です ([#11](https://github.com/Seika139/pkm-storage/pull/11))
+- Copier のコマンド例から `--vcs-ref` の指定を外し、既定で最新リリースの template が使われるようにしました ([#14](https://github.com/Seika139/pkm-storage/issues/14))
 - `.gitattributes` で全ファイルの改行コードを LF に統一し、Windows で clone しても CRLF が混入しないようにしました ([#10](https://github.com/Seika139/pkm-storage/pull/10))
 
 ## [0.2.1] - 2026-10-10
