@@ -27,6 +27,8 @@
 /mise/tasks/schedule-uninstall.py
 /mise/tasks/search.py
 /mise/tasks/skills-install.py
+/mise/tasks/storage-enroll.py
+/mise/tasks/storage-policy-review.py
 /mise/tasks/sync.py
 /pkm-storage-vault/AGENTS.framework.md
 # END PKM Framework managed files
